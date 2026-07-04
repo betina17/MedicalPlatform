@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from './store/authStore';
 import { refreshToken as apiRefresh } from './api/authApi';
+import { getMyPatient, getMyDoctor } from './api/userApi';
 import type { Role } from './types';
 
 import Layout from './components/Layout';
@@ -59,17 +60,40 @@ function RootRedirect() {
 
 // ─── Auth Initializer ─────────────────────────────────────────────────────────
 
+// Decode a JWT payload without verifying the signature (the server verifies it).
+// Used only to recover role/accountId from a freshly issued access token on reload.
+function decodeJwt(token: string): { sub: string; role: Role } | null {
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), '=');
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
 function AuthInitializer({ children }: { children: React.ReactNode }) {
-  const { refreshToken: storedRefresh, setAccessToken, logout } = useAuthStore();
+  const { setTokens, setProfile, logout } = useAuthStore();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!storedRefresh) {
-      setReady(true);
-      return;
-    }
-    apiRefresh(storedRefresh)
-      .then((res) => setAccessToken(res.accessToken))
+    // On load, try a silent refresh. The refresh token lives in an httpOnly cookie,
+    // so a valid session survives reloads even though nothing is in localStorage.
+    apiRefresh()
+      .then(async (res) => {
+        const claims = decodeJwt(res.accessToken);
+        if (!claims) throw new Error('Invalid access token');
+
+        setTokens({ accessToken: res.accessToken, role: claims.role, accountId: claims.sub });
+
+        // Restore profileId so dashboards can fetch data (may be absent if no profile yet).
+        try {
+          const profile = claims.role === 'PATIENT' ? await getMyPatient() : await getMyDoctor();
+          setProfile(profile.id);
+        } catch {
+          // No profile yet — dashboard will prompt to create one.
+        }
+      })
       .catch(() => logout())
       .finally(() => setReady(true));
   }, []);

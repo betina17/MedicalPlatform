@@ -18,13 +18,12 @@ export const register = async (data: RegisterRequest): Promise<RegisterResponse>
   return response.data.data;
 };
 
-export const refreshToken = async (token: string): Promise<RefreshResponse> => {
-  const response = await axiosInstance.post<ApiSuccess<RefreshResponse>>('/api/auth/refresh', {
-    refreshToken: token,
-  });
+// The refresh token is held in an httpOnly cookie, sent automatically.
+export const refreshToken = async (): Promise<RefreshResponse> => {
+  const response = await axiosInstance.post<ApiSuccess<RefreshResponse>>('/api/auth/refresh');
   return response.data.data;
 };
 
-export const logout = async (token: string): Promise<void> => {
-  await axiosInstance.post('/api/auth/logout', { refreshToken: token });
+export const logout = async (): Promise<void> => {
+  await axiosInstance.post('/api/auth/logout');
 };

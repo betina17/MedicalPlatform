@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { logout as logoutApi } from '../api/authApi';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { role, refreshToken, logout } = useAuthStore();
+  const { role, logout } = useAuthStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
@@ -30,9 +30,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = async () => {
     try {
-      if (refreshToken) {
-        await logoutApi(refreshToken);
-      }
+      // Clears the refresh token server-side and expires the httpOnly cookie.
+      await logoutApi();
     } catch {
       // ignore error, log out anyway
     } finally {

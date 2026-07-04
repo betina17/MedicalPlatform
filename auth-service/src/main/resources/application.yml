@@ -25,3 +25,5 @@ jwt:
   secret: ${JWT_SECRET:mediconnect-super-secret-jwt-key-change-in-prod-min-256-bits}
   access-expiry-ms: ${JWT_ACCESS_EXPIRY_MS:900000}
   refresh-expiry-ms: ${JWT_REFRESH_EXPIRY_MS:604800000}
+  # Send the refresh-token cookie only over HTTPS. Keep false for local http dev
+  cookie-secure: ${JWT_COOKIE_SECURE:false}

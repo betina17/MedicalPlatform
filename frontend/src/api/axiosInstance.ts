@@ -6,6 +6,8 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Send the httpOnly refresh-token cookie on auth requests.
+  withCredentials: true,
 });
 
 // Request interceptor: attach Bearer token
@@ -64,16 +66,11 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const { refreshToken, logout, setAccessToken } = useAuthStore.getState();
-
-      if (!refreshToken) {
-        logout();
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
+      const { logout, setAccessToken } = useAuthStore.getState();
 
       try {
-        const response = await axios.post('/api/auth/refresh', { refreshToken });
+        // The refresh token travels in an httpOnly cookie — no body needed.
+        const response = await axios.post('/api/auth/refresh', null, { withCredentials: true });
         const newToken: string = response.data?.data?.accessToken;
 
         if (!newToken) throw new Error('No access token in refresh response');

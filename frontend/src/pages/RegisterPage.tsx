@@ -96,7 +96,6 @@ export default function RegisterPage() {
       const loginData = await loginApi({ email, password });
       setTokens({
         accessToken: loginData.accessToken,
-        refreshToken: loginData.refreshToken,
         role: loginData.role,
         accountId: loginData.accountId,
       });

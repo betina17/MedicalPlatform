@@ -24,7 +24,6 @@ export default function LoginPage() {
       const data = await loginApi({ email, password });
       setTokens({
         accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
         role: data.role,
         accountId: data.accountId,
       });

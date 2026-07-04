@@ -81,7 +81,7 @@ public class AuthService {
         return new RegisterResponse(account.getId(), account.getEmail(), account.getRole());
     }
 
-    public LoginResponse login(LoginRequest req) {
+    public LoginResult login(LoginRequest req) {
         Account account = accountRepository.findByEmail(req.email())
             .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 
@@ -103,11 +103,16 @@ public class AuthService {
         refreshToken.setCreatedAt(LocalDateTime.now());
         refreshTokenRepository.save(refreshToken);
 
-        return new LoginResponse(accessToken, refreshTokenValue, account.getRole(), account.getId());
+        LoginResponse body = new LoginResponse(accessToken, account.getRole(), account.getId());
+        return new LoginResult(body, refreshTokenValue);
     }
 
-    public RefreshResponse refresh(RefreshRequest req) {
-        RefreshToken storedToken = refreshTokenRepository.findByToken(req.refreshToken())
+    public RefreshResponse refresh(String refreshTokenValue) {
+        if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
+            throw new IllegalArgumentException("Missing refresh token");
+        }
+
+        RefreshToken storedToken = refreshTokenRepository.findByToken(refreshTokenValue)
             .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
 
         if (storedToken.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -122,8 +127,10 @@ public class AuthService {
         return new RefreshResponse(newAccessToken);
     }
 
-    public void logout(LogoutRequest req) {
-        refreshTokenRepository.deleteByToken(req.refreshToken());
+    public void logout(String refreshTokenValue) {
+        if (refreshTokenValue != null && !refreshTokenValue.isBlank()) {
+            refreshTokenRepository.deleteByToken(refreshTokenValue);
+        }
     }
 
     @Transactional(readOnly = true)
